@@ -1,4 +1,5 @@
 import random
+import sqlite3
 
 from kivy.config import Config
 from kivy.core.audio import SoundLoader
@@ -58,6 +59,9 @@ class MainWidget(RelativeLayout):
     menu_title = StringProperty("G   A   L   A   X   Y")
     menu_button_title = StringProperty("START")
     score_txt = StringProperty()
+    score_val = 0;
+    maxscore_txt = StringProperty()
+    maxscore_val=0
 
     sound_begin = None
     sound_galaxy = None
@@ -75,6 +79,23 @@ class MainWidget(RelativeLayout):
         self.init_tiles()
         self.init_ship()
         self.reset_game()
+        conn = sqlite3.connect('game_db.db')
+        print("database connected")
+        c = conn.cursor()
+        c.execute("""CREATE TABLE if not exists Game_score(score INTEGER) """)
+        print("tabel created")
+        # Grab records from database
+        cursor = c.execute("SELECT MAX(score) FROM Game_score")
+        print("data fetched")
+        for row in cursor:
+            self.maxscore_val=row[0]
+        # Commit our changes
+        # c.execute("DELETE FROM Game_score")
+        # c.execute("INSERT INTO Game_score (score) VALUES (0)")
+        conn.commit()
+
+        # Close our connection
+        conn.close()
 
         if self.is_desktop():
             self._keyboard = Window.request_keyboard(self.keyboard_closed, self)
@@ -99,11 +120,53 @@ class MainWidget(RelativeLayout):
         self.sound_restart.volume = .25
         self.sound_gameover_impact.volume = .6
 
+
+    def put_score(self):
+        conn = sqlite3.connect('game_db.db')
+
+        # Create A Cursor
+        c = conn.cursor()
+        score=int (self.score_val)
+
+        # Add A Record
+        c.execute("INSERT INTO Game_score (score) VALUES ('{}');".format(score))
+
+        conn.commit()
+        print("data inserted")
+        # Close our connection
+        conn.close()
+
+    def get_maxscore(self):
+
+        conn = sqlite3.connect('game_db.db')
+
+        # Create A Cursor
+        c = conn.cursor()
+
+        # Grab records from database
+
+
+
+        # record=c.fetchall()
+        # print(cursor[0])
+        # self.maxscore_txt = "High Score: " + str(self.cu)
+
+        ms=max(self.maxscore_val,self.score_val)
+        self.maxscore_txt = "High Score: " + str(ms)
+        #     print(row[0])
+        print(self.maxscore_txt)
+        conn.commit()
+
+        # Close our connection
+        conn.close()
+        # self.maxScore="HighScore"+str(record)
+
     def reset_game(self):
         self.current_offset_y = 0
         self.current_y_loop = 0
         self.current_speed_x = 0
         self.current_offset_x = 0
+        self.score_val = 0;
         self.tiles_coordinates = []
         self.score_txt = "SCORE: " + str(self.current_y_loop)
         self.pre_fill_tiles_coordinates()
@@ -289,6 +352,7 @@ class MainWidget(RelativeLayout):
         self.update_horizontal_lines()
         self.update_tiles()
         self.update_ship()
+        self.get_maxscore()
 
         if not self.state_game_over and self.state_game_has_started:
             speed_y = self.SPEED * self.height / 100
@@ -299,6 +363,7 @@ class MainWidget(RelativeLayout):
                 self.current_offset_y -= spacing_y
                 self.current_y_loop += 1
                 self.score_txt = "SCORE: " + str(self.current_y_loop)
+                self.score_val = self.current_y_loop
                 self.generate_tiles_coordinates()
                 print("loop : " + str(self.current_y_loop))
 
@@ -314,6 +379,7 @@ class MainWidget(RelativeLayout):
             self.sound_gameover_impact.play()
             Clock.schedule_once(self.play_game_over_voice_sound, 3)
             print("GAME OVER")
+            self.put_score()
 
     def play_game_over_voice_sound(self, dt):
         if self.state_game_over:

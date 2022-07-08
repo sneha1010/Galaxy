@@ -14,8 +14,15 @@ MainWidget:
     MenuWidget:
         id: menu_widget
     Label:
+        text: root.maxscore_txt
+        font_size: dp(22)
+        font_name: 'fonts/Eurostile.ttf'
+        size_hint: .18, .18
+        pos_hint: {"x": 0.02, "top": 1}
+
+    Label:
         text: root.score_txt
         font_size: dp(20)
         font_name: 'fonts/Eurostile.ttf'
         size_hint: .18, .18
-        pos_hint: {"x": 0, "top": 1}
+        pos_hint: {"x": 0, "top": 0.9}
